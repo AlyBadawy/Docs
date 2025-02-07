@@ -8,6 +8,7 @@ Start by adding overcommit to the GemFile as:
 
 ```rb
 group :development do
+  gem 'fasterer'
   gem 'overcommit'
 end
 ```

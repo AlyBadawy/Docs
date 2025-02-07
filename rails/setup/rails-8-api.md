@@ -14,7 +14,7 @@ This setup will include the following
 - Linting:
   - Rubocop
 - Authentication:
-  - Modified Rails 8 Authentication (JWT-pased)
+  - Modified Rails 8 Authentication (JWT-Based)
   - Session invalidation and control
   - User roles
 
@@ -29,7 +29,10 @@ rails new my_app --api -T
 cd my_app
 ```
 
-This will create a new rails application named `my_app`, and will be API only, and will not generate any tests (as we will be using RSPEC as shown later)
+This will create a new rails application named `my_app`, and will be API only, and will not generate any tests (as we will be using RSPEC as shown later).
+
+**Note** \
+We didn't specify the database here as we will be using a mix of Postgresql and SQLite (discussed in [databases](./database.md)), and it's easier to start with the default SQLite and then add PostgreSQL.
 
 #### Git
 
@@ -50,25 +53,17 @@ At this point, you may want to create a repository on github and push this commi
 
 ### Gemfile
 
-Cleanup the `Gemfile` and uncomment the `rack-cors` gem, then run
+- Cleanup the `Gemfile` (Optional, but recommended).
+- Uncomment the `rack-cors` gem
+- Uncomment the `jbuilder` gem
 
-```bash
-bundle
-git add --all
-git commit -m "[chore] Gem cleanup"
-```
+- Run the following command:
 
----
-
-### Rubocop
-
-Configure Rubocop using the documentation at [Rubocop](./rubocop.md)
-
----
-
-### OverCommit
-
-Configure Overcommit using the documentation at [OverCommit](./overcommit.md)
+  ```bash
+  bundle
+  git add --all
+  git commit -m "[chore] Gem cleanup"
+  ```
 
 ---
 
@@ -85,3 +80,27 @@ For testing we will be installing
 To setup testing, use the documentation found at [Testing](testing.md)
 
 ---
+
+### Rubocop
+
+Configure Rubocop using the documentation at [Rubocop](./rubocop.md)
+
+---
+
+### OverCommit
+
+Configure Overcommit using the documentation at [OverCommit](./overcommit.md)
+
+---
+
+### Database
+
+Use the documentation in [Database](./database.md) to setup the database
+
+---
+
+### Authentication
+
+We will be building the authentication for the application to have user roles, authentication using JWT tokens, Refresh and invalidate token mechanisms, account management and more.
+
+Now, head to the [Authentication Setup](./auth/setup-auth.md) Docummentation.

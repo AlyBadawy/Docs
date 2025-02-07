@@ -2,7 +2,7 @@
 
 Change the contents of `.rubocop.yml` to match the following:
 
-```yaml
+```yml
 inherit_gem:
   rubocop-rails-omakase: rubocop.yml
   rubocop-config-prettier: config/rubocop.yml
@@ -107,6 +107,9 @@ Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
 Layout/SpaceAroundEqualsInParameterDefault:
   Enabled: true
+Layout/SpaceInsideArrayLiteralBrackets:
+  Enabled: true
+  EnforcedStyle: no_space
 
 Lint/Debugger:
   Enabled: true
@@ -148,6 +151,8 @@ Rails/ApplicationController:
   Enabled: true
 Rails/FilePath:
   Enabled: false
+Rails/I18nLocaleTexts:
+  Enabled: false
 Rails/ResponseParsedBody:
   Enabled: false
 
@@ -176,6 +181,9 @@ Style/FrozenStringLiteralComment:
 Style/StringLiterals:
   Enabled: true
   EnforcedStyle: double_quotes
+style/TrailingCommaInHashLiteral:
+  Enabled: true
+  EnforcedStyleForMultiline: consistent_comma
 Style/QuotedSymbols:
   Enabled: true
   EnforcedStyle: single_quotes
