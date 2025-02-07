@@ -1,0 +1,203 @@
+# Rubocop
+
+Change the contents of `.rubocop.yml` to match the following:
+
+```yaml
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+  rubocop-config-prettier: config/rubocop.yml
+
+require:
+  - rubocop-performance
+  - rubocop-rails
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - bin/yarn
+    - db/schema.rb
+    - vendor/**/*
+    - node_modules/**/*
+    - tmp/**/*
+    - public/**/*
+    - bin/**/*
+    - data/**/*
+
+Bundler/DuplicatedGem:
+  Enabled: true
+  Include:
+    - '**/*.gemfile'
+    - '**/Gemfile'
+    - '**/gems.rb'
+Bundler/GemComment:
+  Enabled: false
+Bundler/GemVersion:
+  Enabled: false
+  EnforcedStyle: 'required'
+  Include:
+    - '**/*.gemfile'
+    - '**/Gemfile'
+    - '**/gems.rb'
+  AllowedGems: []
+Bundler/OrderedGems:
+  Enabled: true
+  TreatCommentsAsGroupSeparators: true
+  ConsiderPunctuation: false
+  Include:
+    - '**/*.gemfile'
+    - '**/Gemfile'
+    - '**/gems.rb'
+
+Layout/AccessModifierIndentation:
+  Enabled: true
+  EnforcedStyle: indent
+Layout/ArgumentAlignment:
+  Enabled: true
+  EnforcedStyle: with_first_argument
+Layout/ArrayAlignment:
+  Enabled: true
+  EnforcedStyle: with_first_element
+Layout/CaseIndentation:
+  Enabled: true
+  EnforcedStyle: end
+Layout/ClassStructure:
+  Enabled: true
+  Categories:
+    module_inclusion:
+      - include
+      - prepend
+      - extend
+  ExpectedOrder:
+    - module_inclusion
+    - constants
+    - public_class_methods
+    - initializer
+    - public_methods
+    - protected_methods
+    - private_methods
+Layout/CommentIndentation:
+  Enabled: true
+  AllowForAlignment: true
+Layout/DotPosition:
+  Enabled: true
+  EnforcedStyle: leading
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+  EmptyLineBetweenMethodDefs: true
+  EmptyLineBetweenClassDefs: true
+  EmptyLineBetweenModuleDefs: true
+  AllowAdjacentOneLineDefs: true
+  NumberOfEmptyLines: 1
+Layout/EmptyLinesAroundAccessModifier:
+  Enabled: true
+  EnforcedStyle: around
+Layout/HashAlignment:
+  Enabled: true
+  AllowMultipleStyles: true
+  EnforcedHashRocketStyle: key
+  EnforcedColonStyle: key
+Layout/IndentationStyle:
+  Enabled: true
+  EnforcedStyle: spaces
+Layout/IndentationWidth:
+  Width: 2
+Layout/MultilineMethodCallIndentation:
+  Enabled: true
+  EnforcedStyle: indented
+Layout/SpaceAroundEqualsInParameterDefault:
+  Enabled: true
+
+Lint/Debugger:
+  Enabled: true
+  Severity: error
+
+Metrics/AbcSize:
+  Max: 50
+Metrics/BlockLength:
+  CountComments: false
+  Max: 50
+  AllowedMethods:
+    - context
+    - describe
+    - it
+    - shared_examples
+    - shared_examples_for
+    - namespace
+    - draw
+    - configure
+    - group
+  Exclude:
+    - config/routes.rb
+    - config/seeds.rb
+Metrics/ClassLength:
+  Enabled: true
+  Max: 200
+Metrics/ModuleLength:
+  Enabled: true
+  Max: 250
+Metrics/MethodLength:
+  Enabled: true
+  Max: 20
+  Exclude:
+    - 'db/migrate/*.rb'
+
+Rails:
+  Enabled: true
+Rails/ApplicationController:
+  Enabled: true
+Rails/FilePath:
+  Enabled: false
+Rails/ResponseParsedBody:
+  Enabled: false
+
+RSpec:
+  Enabled: true
+RSpec/DescribeClass:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: true
+  Max: 25
+RSpec/HookArgument:
+  Enabled: false
+RSpec/InstanceVariable:
+  Enabled: false
+RSpec/NestedGroups:
+  Enabled: true
+  Max: 5
+RSpec/MultipleExpectations:
+  Enabled: true
+  Max: 5
+
+Style/Documentation:
+  Enabled: false
+Style/FrozenStringLiteralComment:
+  Enabled: false
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: double_quotes
+Style/QuotedSymbols:
+  Enabled: true
+  EnforcedStyle: single_quotes
+```
+
+Now, install the plugins used by `rubocop` as gem by modifying the `Gemfile` to include the following group:
+
+```rb
+group :development do
+  gem "rubocop"
+  gem "rubocop-config-prettier"
+  gem "rubocop-performance"
+  gem "rubocop-rails"
+  gem "rubocop-rspec"
+end
+```
+
+Run rubocop and commit:
+
+```bash
+bundle
+rubocop -A
+git add --all
+git commit -m "[chore] Rubocop setup"
+```
