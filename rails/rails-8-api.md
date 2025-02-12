@@ -32,7 +32,7 @@ cd my_app
 This will create a new rails application named `my_app`, and will be API only, and will not generate any tests (as we will be using RSPEC as shown later).
 
 **Note** \
-We didn't specify the database here as we will be using a mix of Postgresql and SQLite (discussed in [databases](./database.md)), and it's easier to start with the default SQLite and then add PostgreSQL.
+We didn't specify the database here as we will be using a mix of Postgresql and SQLite (discussed in [databases](./setup/database.md)), and it's easier to start with the default SQLite and then add PostgreSQL.
 
 #### Git
 
@@ -77,25 +77,25 @@ For testing we will be installing
 - Faker
 - Shoulda Matchers
 
-To setup testing, use the documentation found at [Testing](testing.md)
+To setup testing, use the documentation found at [Testing](./setup/testing.md)
 
 ---
 
 ### Rubocop
 
-Configure Rubocop using the documentation at [Rubocop](./rubocop.md)
+Configure Rubocop using the documentation at [Rubocop](./setup/rubocop.md)
 
 ---
 
 ### OverCommit
 
-Configure Overcommit using the documentation at [OverCommit](./overcommit.md)
+Configure Overcommit using the documentation at [OverCommit](./setup/overcommit.md)
 
 ---
 
 ### Database
 
-Use the documentation in [Database](./database.md) to setup the database
+Use the documentation in [Database](./setup/database.md) to setup the database
 
 ---
 
