@@ -36,7 +36,6 @@ For testing we will be installing
 
 - Edit `spec/rails_helper.rb` to become as:
   ```rb
-  
   require "spec_helper"
   ENV["RAILS_ENV"] ||= "test"
   require_relative "../config/environment"
@@ -47,7 +46,7 @@ For testing we will be installing
   require "database_cleaner"
   require "capybara/rspec"
 
-  Dir[Rails.root.join("spec", "support", "**", "*.rb")].each { |f| require f }
+  Rails.root.glob("spec/support/**/*.rb").each { |f| require f }
 
   begin
     ActiveRecord::Migration.maintain_test_schema!
@@ -60,7 +59,7 @@ For testing we will be installing
     config.use_transactional_fixtures = true
     config.before(:suite) { DatabaseCleaner.clean_with(:truncation) }
     config.before(:each) { DatabaseCleaner.strategy = :transaction }
-    config.before(:each, js: true) { DatabaseCleaner.strategy = :truncation }
+    config.before(:each, :js) { DatabaseCleaner.strategy = :truncation }
     config.before(:each) { DatabaseCleaner.start }
     config.after(:each) { DatabaseCleaner.clean }
     config.infer_spec_type_from_file_location!
@@ -73,6 +72,7 @@ For testing we will be installing
       end
     end
   end
+
   ```
 
 - Edit `spec/spec_helper.rb` to become as:
