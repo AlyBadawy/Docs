@@ -7,7 +7,7 @@ inherit_gem:
   rubocop-rails-omakase: rubocop.yml
   rubocop-config-prettier: config/rubocop.yml
 
-require:
+plugins:
   - rubocop-performance
   - rubocop-rails
   - rubocop-rspec
