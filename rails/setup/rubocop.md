@@ -181,7 +181,7 @@ Style/FrozenStringLiteralComment:
 Style/StringLiterals:
   Enabled: true
   EnforcedStyle: double_quotes
-style/TrailingCommaInHashLiteral:
+Style/TrailingCommaInHashLiteral:
   Enabled: true
   EnforcedStyleForMultiline: consistent_comma
 Style/QuotedSymbols:
