@@ -25,11 +25,11 @@ This setup will include the following
 Run the following command to create and setup the minimum requirements for the application
 
 ```bash
-rails new my_app --api -T
+rails new . --api -T
 cd my_app
 ```
 
-This will create a new rails application named `my_app`, and will be API only, and will not generate any tests (as we will be using RSPEC as shown later).
+This will create a new rails application in the current directory (and will be named based on the directory name), will be API only, and will not generate any tests (as we will be using RSPEC as shown later).
 
 **Note** \
 We didn't specify the database here as we will be using a mix of Postgresql and SQLite (discussed in [databases](./setup/database.md)), and it's easier to start with the default SQLite and then add PostgreSQL.
