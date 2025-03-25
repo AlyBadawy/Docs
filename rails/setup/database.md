@@ -1,4 +1,4 @@
-# Database
+  # Database
 
 For the application database, we will be using:
 
@@ -19,44 +19,45 @@ For the application database, we will be using:
 
   ```yaml
   default: &default
-    adapter: sqlite3
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     timeout: 5000
+
+  # SQLite3 configuration
+  sqlite3: &sqlite3
+    <<: *default
+    adapter: sqlite3
 
   # PostgreSQL configuration
   postgres: &postgres
+    <<: *default
     adapter: postgresql
     encoding: unicode
-    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    timeout: 5000
-    # username: <%= ENV['DATABASE_USERNAME'] %>
-    # password: <%= ENV['DATABASE_PASSWORD'] %>
-    # host: <%= ENV['DATABASE_HOST'] %>
+    username: <%= ENV.fetch('DATABASE_USERNAME') {'postgres'} %>
+    password: <%= ENV.fetch('DATABASE_PASSWORD') {'postgres'} %>
+    host: <%= ENV.fetch('DATABASE_HOST') {'localhost'} %>
 
   development:
     <<: *postgres
-    database: rails-api-auth_development
+    database: <%= "#{ENV.fetch('APP_NAME') {'anubis_backend_engine'}}_development" %>
 
   test:
     <<: *postgres
-    database: rails-api-auth_test
+    database: <%= "#{ENV.fetch('APP_NAME') {'anubis_backend_engine'}}_test" %>
 
-  # Store production database in the storage/ directory, which by default
-  # is mounted as a persistent Docker volume in config/deploy.yml.
   production:
     primary:
       <<: *postgres
-      database: rails-api-auth_production
+      database: storage/production.sqlite3
     cache:
-      <<: *default
+      <<: *sqlite3
       database: storage/production_cache.sqlite3
       migrations_paths: db/cache_migrate
     queue:
-      <<: *default
+      <<: *sqlite3
       database: storage/production_queue.sqlite3
       migrations_paths: db/queue_migrate
     cable:
-      <<: *default
+      <<: *sqlite3
       database: storage/production_cable.sqlite3
       migrations_paths: db/cable_migrate
   ```
