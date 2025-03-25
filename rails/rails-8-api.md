@@ -99,6 +99,12 @@ Use the documentation in [Database](./setup/database.md) to setup the database
 
 ---
 
+### CI and Dependabot
+
+Use the documentation in [CI and Dependabot](./setup/ci_and_dependabot.md) to configure both for better code quality
+
+---
+
 ### Authentication
 
 We will be building the authentication for the application to have user roles, authentication using JWT tokens, Refresh and invalidate token mechanisms, account management and more.
