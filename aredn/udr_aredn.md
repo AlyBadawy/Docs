@@ -1,6 +1,6 @@
-# 📡 AREDN Mesh DNS Integration with UniFi UDR-7 (Topology & Persistence)
+# 📡 AREDN Mesh Integration with UniFi UDR-7
 
-_Last updated: Jan 2026_
+_Last updated: Feb 2026_
 
 This document is a **complete reference** for integrating an **AREDN
 mesh node** with a **UniFi Dream Router (UDR-7)**, including:
@@ -16,115 +16,281 @@ This reflects the **final, stable configuration** in use.
 
 ---
 
-## 🧭 Topology Overview
+## 1. Introduction
 
-### Physical / Logical Layout
+AREDN (Amateur Radio Emergency Data Network) enables licensed amateur
+radio operators to interconnect private networks over RF links and VPN
+tunnels, forming a distributed IP-based mesh network.
 
+Key characteristics of AREDN:
+
+- **No NAT inside the mesh** -- Nodes receive routable 10.x.x.x
+  addresses derived from callsigns.
+- **Layer 3 dynamic routing (OLSR-based)** -- Routes are automatically
+  learned and adjusted.
+- **Distributed hostname propagation** -- Services are advertised and
+  discoverable across the mesh via `.local.mesh` hostnames.
+
+Unlike traditional home networking, AREDN behaves like a routed backbone
+rather than an ISP-style WAN.
+
+---
+
+## 2. Typical Home Deployment
+
+In a simple setup:
+
+    Home LAN → AREDN Node → RF / VPN → Mesh
+
+The AREDN node connects directly to a basic home router.\
+Segmentation is minimal, routing is simple, and the LAN effectively
+behaves as a client of the mesh.
+
+This model works well for uncomplicated networks.
+
+However, You can only access the mesh network using a client of an AREDN node.
+Although, you can use port forwarding and other mechanisms to make some services
+exposed to your home network (the WAN side of the AREDN network), AREDN networks
+maintain their own dynamic DNS system in authorative way, and DNS by design is
+not forwarded or exposed to the WAN side.
+
+---
+
+## 3. My Network Environment
+
+My environment is significantly more complex.
+
+A UniFi router serves as the authoritative network controller, managing
+multiple VLANs:
+
+- Private LAN
+- Work network
+- Dedicated VPN network
+- IoT network
+- Additional segmented environments
+
+UniFi handles:
+
+- VLAN isolation\
+- Firewall policies\
+- Static routing\
+- DNS control\
+- Monitoring and observability
+
+This segmentation and centralized control are intentional and required.
+
+---
+
+## 4. The Core Architectural Conflict
+
+Integrating AREDN into this environment creates design tension.
+
+### Option 1 -- Place LAN behind AREDN
+
+This would make my internal network a client of the mesh and bypass
+UniFi's centralized routing and segmentation model.
+
+This also means that I have to throttle my internet connection to the maximum
+connection speed available to the hardware of the AREDN node. That is 1Gbps
+in some hardware, and 100Mbps on most others. I need at least 2.5Gbps.
+
+### Option 2 -- Treat AREDN as a WAN on UniFi
+
+This does not work conceptually or technically. AREDN is not an upstream
+ISP --- it is a routed mesh with its own addressing and dynamic routing.
+
+### Option 3 -- Fully isolate AREDN
+
+This prevents seamless access to mesh services from controlled VLANs and
+creates unnecessary friction.
+
+---
+
+## 5. The Actual Problem
+
+The issue is not connectivity.
+
+The issue is architectural alignment.
+
+I need:
+
+- Full participation in the AREDN mesh\
+- Access to mesh-wide services\
+- Clean routing without NAT conflicts\
+- Preservation of UniFi VLAN segmentation\
+- Centralized firewall and policy control\
+- The high speed connections that are NOT accessible to AREDN nodes
+
+The challenge is designing an integration model where:
+
+- AREDN remains a proper mesh node\
+- UniFi remains the authoritative internal router\
+- Neither system is reduced to a workaround
+
+The rest of this document describes how that balance was achieved.
+
+---
+
+## 6. Philosophy of the Solution
+
+### 6.1 Design Principles
+
+This solution is built around a few core principles:
+
+- Clear separation of responsibilities\
+- Deterministic routing\
+- Centralized policy control\
+- Controlled boundary between routing domains\
+- Automation over manual maintenance
+
+The goal was not just connectivity --- it was architectural alignment
+between AREDN and UniFi.
+
+### 6.2 Role Separation
+
+The architecture assigns strict roles:
+
+**AREDN Node** - Participates fully in the mesh - Handles RF/VPN mesh
+routing - Advertises and consumes mesh services
+
+**UniFi (UDR)** - Remains the authoritative router for all internal
+VLANs - Enforces firewall and segmentation policies - Controls DNS and
+routing decisions
+
+Neither system is reduced to a workaround.\
+Each operates within its intended design scope.
+
+### 6.3 Dual-Network Integration Model
+
+The integration introduces two dedicated networks on the UniFi router:
+
+#### `aredn-lan` (Mesh-Facing LAN)
+
+A dedicated internal network where:
+
+- UniFi participates as a client of the AREDN mesh
+- Mesh routing is explicitly handled
+- The mesh domain is logically contained
+
+This allows UniFi to understand and route to the mesh --- but only
+within this controlled segment.
+
+#### `aredn-wan` (AREDN Uplink Network)
+
+A separate network used exclusively for the AREDN node uplink:
+
+- The AREDN node connects to UniFi as a WAN-side client
+- From UniFi's perspective, the AREDN node is simply another routed
+  upstream network
+- Routing between UniFi and AREDN is explicit and controlled
+
+Separating uplink and mesh participation avoids ambiguity and keeps
+traffic direction predictable.
+
+### 6.4 Controlled Access via NAT Policy
+
+To allow my segmented internal VLANs (private, work, IoT, VPN, etc.) to
+access the AREDN mesh, a NAT policy is applied on UniFi.
+
+This ensures:
+
+- Internal VLANs are NATed when accessing the mesh
+- The AREDN mesh sees only **one client**: the UniFi router
+- No internal subnet is directly exposed
+- Mesh nodes cannot traverse back into private segments
+
+From the mesh's perspective, my entire environment appears as a single
+routed endpoint.
+
+This preserves outbound access while preventing unintended inbound
+exposure.
+
+### 6.5 DNS and Automation
+
+Mesh hostnames are synchronized into the UniFi environment in a
+controlled way using:
+
+- Scripted mesh data retrieval
+- Systemd services and timers
+- Controlled publishing into dnsmasq
+- Logging for observability
+
+This ensures:
+
+- Reliable hostname resolution
+- Automatic updates when the mesh changes
+- Recovery after reboots
+- Long-term maintainability
+
+### 6.6 🧭 Topology Overview
+
+#### Physical / Logical Layout
+
+```
     [ ISP Modem ]
           |
           |  (Public IP)
           v
     [ UniFi UDR-7 ]
           |
+          |-- VLAN 1 (unifi-management) 172.20.1.0/24
+          |
+          |-- VLAN 10 (Personal) 172.21.10.0/24
+          |
+          |-- VLAN 11 (Personal-VPN) 172.21.11.0/24
+          |
+          |-- VLAN 20 (Work) 172.21.20.0/24
+          |
+          |-- VLAN 30 (IoT) 172.21.30.0/24
+          |
+          |-- VLAN 31 (Cameras) 172.21.31.0/24
+          |
           |-- VLAN 40 (aredn-wan) 172.21.40.0/29
           |      |
-          |      +--> AREDN Node WAN
+          |      +--> AREDN Node WAN Port                   <---+
+          |                                                     |
+          |-- VLAN 41 (aredn-lan) 10.6.229.8/29           [ AREDN NODE ]
+          |      |                                              |
+          |      +--> AREDN Node LAN Port (10.6.229.9)      <---+
+          |      |      |
+          |      |      +--> AREDN Mesh (10.0.0.0/8)
+          |      |
+          |      +--> Mesh phone and other services
           |
-          |-- VLAN 41 (aredn-lan) 10.6.229.8/29
-                 |
-                 +--> AREDN Node LAN (10.6.229.9)
-                        |
-                        +--> AREDN Mesh (10.0.0.0/8)
-
-# 2. High-Level Architecture
-
-```mermaid
-flowchart LR
-    LAN[Home LAN 192.168.1.0/24] --> UDR
-    UDR --> VLAN41
-    VLAN41 --> AREDN
-    AREDN --> MESH[Mesh Network 10.0.0.0/8]
-
-    UDR -. Static Route 10/8 .-> AREDN
-    UDR -. SSH Pull Hosts .-> AREDN
-    UDR -. addn-hosts .-> dnsmasq
+          |-- VLAN 200 (guest) 172.21.200.0/24
 ```
 
-### Why This Topology
+### 6.7 Philosophy Summary
 
-This topology is **intentional** and solves multiple constraints:
+This solution respects the design philosophy of both systems:
 
-1.  **AREDN expects to be a router**, not a client
-2.  UniFi WAN port must remain ISP-facing
-3.  AREDN WAN must receive RFC1918 space
-4.  AREDN LAN must remain authoritative for mesh routing
-5.  Home LANs must:
-    - reach mesh services
-    - NOT be reachable from the mesh
+- AREDN remains a decentralized, NAT-free mesh
+- UniFi remains a segmented, policy-driven router
 
-By using **two VLANs**: - VLAN 40 provides a controlled WAN-facing
-segment to AREDN - VLAN 41 provides a clean, routed LAN segment for mesh
-access
+The boundary between them is intentional and controlled.
 
-This avoids: - double-NAT inside the mesh - leaking private LAN routes
-into AREDN - breaking AREDN's OLSR routing assumptions
+The result:
 
----
+- Full mesh participation\
+- Preserved VLAN isolation\
+- Explicit routing\
+- Controlled exposure\
+- Operational stability
 
-## 🌐 UniFi Network Configuration
+The guiding principle is simple:
 
-### VLANs
+> Integrate systems by respecting their design --- not by bending one to
+> fit the other.
 
-Name VLAN Subnet Purpose
+This reflects the **final, stable configuration** in use.
 
 ---
 
-aredn-wan 40 172.21.40.0/29 AREDN WAN
-aredn-lan 41 10.6.229.8/29 AREDN LAN / Mesh gateway
+## 7 Implenetation
 
-UDR IP on aredn-lan: **10.6.229.10**\
-AREDN LAN IP: **10.6.229.9**
+### 7.1 🌐 UniFi Network Configuration
 
----
-
-### Routing
-
-Static route on UDR:
-
-    Destination: 10.0.0.0/8
-    Next hop:    10.6.229.9
-
-Why: - AREDN mesh uses large dynamic address space - Static route avoids
-per-subnet churn - Keeps routing simple and deterministic
-
----
-
-### NAT
-
-Source NAT rule:
-
-- Source: Any UniFi LAN/VLAN
-- Destination: `10.0.0.0/8`
-- Interface: `aredn-lan`
-
-Why: - Mesh nodes never learn home LAN routes - Prevents asymmetric
-routing - Preserves mesh security boundaries
-
----
-
-### Firewall
-
-Rules implemented:
-
-- **Personal / VPN → AREDN**: Allow
-- **AREDN → Personal / VPN (return)**: Allow
-- **AREDN → Internal (unsolicited)**: Blocked by default
-
-DNS is _not_ forwarded --- only routed traffic is allowed.
-
----
-
-# 3. VLAN Design
+#### 7.1.1 VLANs
 
 | VLAN | Purpose   | Subnet         |
 | ---- | --------- | -------------- |
@@ -134,9 +300,7 @@ DNS is _not_ forwarded --- only routed traffic is allowed.
 AREDN LAN IP: `10.6.229.9`  
 UDR VLAN 41 IP: `10.6.229.10`
 
----
-
-# 4. Static Routing Strategy
+#### 7.1.2 Routing
 
 Route all mesh traffic via:
 
@@ -145,16 +309,10 @@ Destination: 10.0.0.0/8
 Next Hop: 10.6.229.9
 ```
 
-Rationale:
+Why: - AREDN mesh uses large dynamic address space - Static route avoids
+per-subnet churn - Keeps routing simple and deterministic
 
-- Future-proof against dynamic subnet allocation
-- No route churn
-- No OLSR parsing required
-- Deterministic routing behavior
-
----
-
-# 5. Source NAT Boundary
+#### 7.1.3 NAT
 
 Outbound NAT rule:
 
@@ -168,15 +326,23 @@ Purpose:
 - Avoids asymmetric return traffic
 - Enforces clean L3 boundary
 
----
+#### 7.1.4 Firewall
 
-## 🔑 SSH Access to AREDN
+Rules implemented:
+
+- **Personal / VPN → AREDN**: Allow
+- **AREDN → Personal / VPN (return)**: Allow
+- **AREDN → Internal (unsolicited)**: Blocked by default
+
+DNS is _not_ forwarded --- only routed traffic is allowed.
+
+### 7.2 🔑 SSH Access to AREDN
 
 - Port: **2222**
 - Authentication: **Key-based only**
 - Key stored on UDR:
 
-### Generate the SSH Key (on the UDR)
+#### 7.2.1 Generate the SSH Key (on the UDR)
 
 Generate a dedicated keypair for this integration so it can be rotated
 independently of any admin keys.
@@ -192,7 +358,7 @@ Notes:
 - This key is **read-only** in practice because the AREDN user will be
   restricted (see upload section below).
 
-### Upload the Public Key via AREDN UI
+#### 7.2.2 Upload the Public Key via AREDN UI
 
 1. Log into the AREDN node UI.
 2. Navigate to **Administration → SSH Keys** (may appear as **Services → SSH**
@@ -212,19 +378,9 @@ ssh -p 2222 -i /data/aredn/id_ed25519 -o BatchMode=yes root@10.6.229.9 "uname -a
 
 If this works, the key is correctly installed.
 
-```{=html}
-<!-- -->
-```
+### 🧠 7.3 DNS Strategy
 
-    /data/aredn/id_ed25519
-
-This key is used exclusively for **read-only DNS data extraction**.
-
----
-
-## 🧠 DNS Strategy
-
-### Problem
+#### 7.3.1 Problem
 
 - AREDN generates dynamic host files:
 
@@ -236,7 +392,7 @@ This key is used exclusively for **read-only DNS data extraction**.
 
 - Parent hostnames do not auto-resolve
 
-### Solution
+#### 7.3.2 Solution
 
 - Periodically **pull host data via SSH**
 - Mirror into UniFi dnsmasq using `addn-hosts`
@@ -253,7 +409,7 @@ Generated output (UDR):
 
 No queries are forwarded into the mesh.
 
-### Why Mirror Instead of Forward
+#### 7.3.3 Why Mirror Instead of Forward
 
 Mirroring ensures:
 
@@ -264,9 +420,7 @@ Mirroring ensures:
 Forwarding, by contrast, introduces failure modes where DNS resolution depends
 on mesh connectivity and can expose internal resolver behavior to the mesh.
 
----
-
-## 📄 DNS Update Script
+### 📄 7.4 DNS Update Script
 
 **File:** `/data/aredn/update-mesh-dns.sh`
 
@@ -379,11 +533,11 @@ exit 0
 
 ---
 
-## 🔁 Persistence via systemd
+### 📄 7.5 🔁 Persistence via systemd
 
 Because `/run` is ephemeral, a persistent service is required.
 
-### Why a timer (not a loop daemon)
+#### 7.5.1 Why a timer (not a loop daemon)
 
 Using a systemd timer provides:
 
@@ -394,7 +548,7 @@ Using a systemd timer provides:
 The standalone daemon script below is retained as an alternative option, but
 the timer is the primary, recommended approach.
 
-### Daemon Script
+#### 7.5.2 Daemon Script
 
 **File:** `/mnt/data/aredn/mesh-dns-daemon.sh`
 
@@ -416,7 +570,7 @@ while true; do
 done
 ```
 
-### systemd Unit
+#### 7.5.3 systemd Unit
 
 **File:** `/etc/systemd/system/aredn-mesh-dns.service`
 
@@ -449,13 +603,9 @@ Persistent=true
 WantedBy=timers.target
 ```
 
----
+### 7.6 📋 Logging
 
-## 📋 Logging
-
-Log file:
-
-    /mnt/data/aredn/mesh-dns.log
+Log file: **File:** `/mnt/data/aredn/mesh-dns.log`
 
 Contents: - Timestamp of each update attempt - Success or failure
 indicator
@@ -470,7 +620,7 @@ troubleshooting without syslog
 
 ---
 
-## ✅ Validation
+## 8 ✅ Validation
 
 ```bash
 nslookup AL0Y-home.local.mesh 172.21.10.1
@@ -483,26 +633,11 @@ Expected:
 
 ---
 
-## 🧩 Key Design Principles
-
-- **AREDN remains authoritative**
-- **UniFi remains edge router**
-- **No DNS forwarding**
-- **No route leakage**
-- **No additional hardware**
-- **Reboot safe**
-
----
-
-_End of document_
-
----
-
-## 🔄 Full Rebuild / Recreate Checklist
+## 9 🔄 Full Rebuild / Recreate Checklist
 
 Use this section if you ever want to redo the setup from scratch.
 
-### 1) UniFi VLANs (Network Application)
+### 9.1 UniFi VLANs (Network Application)
 
 Create the two VLAN-only networks:
 
@@ -511,25 +646,25 @@ Create the two VLAN-only networks:
 
 Assign the UDR IP on aredn-lan to **10.6.229.10**.
 
-### 2) Physical Wiring
+### 9.2 Physical Wiring
 
 - UDR LAN port(s) carry VLAN 40 and VLAN 41 to the switch (tagged).
 - AREDN node WAN port connects to the VLAN 40 access/untagged port.
 - AREDN node LAN port connects to the VLAN 41 access/untagged port.
 
-### 3) AREDN Node IPs
+### 9.3 AREDN Node IPs
 
 - **WAN**: DHCP from VLAN 40
 - **LAN**: Static **10.6.229.9/29** (or ensure it is assigned consistently)
 
-### 4) UDR Static Route
+### 9.4 UDR Static Route
 
 Add a route:
 
 - Destination: **10.0.0.0/8**
 - Next hop: **10.6.229.9**
 
-### 5) UDR Source NAT Rule
+### 9.5 UDR Source NAT Rule
 
 Create a rule (LAN/VPN → AREDN):
 
@@ -537,23 +672,23 @@ Create a rule (LAN/VPN → AREDN):
 - Destination: **10.0.0.0/8**
 - Outbound Interface: **aredn-lan**
 
-### 6) UDR Firewall Rules
+### 9.6 UDR Firewall Rules
 
 - Allow **Personal/VPN → AREDN**
 - Allow **AREDN → Personal/VPN (return traffic)**
 - Block **AREDN → Internal (unsolicited)**
 
-### 7) SSH Key
+### 9.7 SSH Key
 
 - Generate the key on the UDR (see SSH section above)
 - Upload the public key to AREDN UI
 
-### 8) Place Scripts
+### 9.8 Place Scripts
 
 - `/data/aredn/update-mesh-dns.sh` (DNS mirror script)
 - `/mnt/data/aredn/mesh-dns-daemon.sh` (optional)
 
-### 9) Install systemd Units
+### 9.9 Install systemd Units
 
 Create:
 
@@ -567,7 +702,7 @@ systemctl daemon-reload
 systemctl enable --now aredn-mesh-dns.timer
 ```
 
-### 10) Validate
+### 9.10 Validate
 
 ```bash
 nslookup AL0Y-home.local.mesh 172.21.10.1
