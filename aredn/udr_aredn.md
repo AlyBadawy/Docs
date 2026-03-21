@@ -550,7 +550,7 @@ the timer is the primary, recommended approach.
 
 #### 7.5.2 Daemon Script
 
-**File:** `/mnt/data/aredn/mesh-dns-daemon.sh`
+**File:** `/data/aredn/mesh-dns-daemon.sh`
 
 ```sh
 #!/bin/sh
@@ -562,9 +562,9 @@ sleep 60
 # Loop forever
 while true; do
     if /data/aredn/update-mesh-dns.sh; then
-        echo "$(date) updated" >> /mnt/data/aredn/mesh-dns.log
+        echo "$(date) updated" >> /data/aredn/mesh-dns.log
     else
-        echo "$(date) update failed" >> /mnt/data/aredn/mesh-dns.log
+        echo "$(date) update failed" >> /data/aredn/mesh-dns.log
     fi
     sleep 60
 done
@@ -605,7 +605,7 @@ WantedBy=timers.target
 
 ### 7.6 📋 Logging
 
-Log file: **File:** `/mnt/data/aredn/mesh-dns.log`
+Log file: **File:** `/data/aredn/mesh-dns.log`
 
 Contents: - Timestamp of each update attempt - Success or failure
 indicator
@@ -686,7 +686,7 @@ Create a rule (LAN/VPN → AREDN):
 ### 9.8 Place Scripts
 
 - `/data/aredn/update-mesh-dns.sh` (DNS mirror script)
-- `/mnt/data/aredn/mesh-dns-daemon.sh` (optional)
+- `/data/aredn/mesh-dns-daemon.sh` (optional)
 
 ### 9.9 Install systemd Units
 
